@@ -1,0 +1,12 @@
+FROM node:22-alpine AS build
+WORKDIR /build
+COPY package.json package-lock.json tsconfig.services.json ./
+COPY services ./services
+RUN npm ci --ignore-scripts && npm run build:services
+
+FROM node:22-alpine
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /build/.opsatlas-build ./.opsatlas-build
+USER node
+CMD ["node", ".opsatlas-build/services/agent/agent.js"]

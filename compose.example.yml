@@ -1,0 +1,40 @@
+services:
+  control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile.control-plane
+    environment:
+      OPSATLAS_HOST: 0.0.0.0
+      OPSATLAS_PORT: 4318
+      OPSATLAS_AGENT_KEYS: ${OPSATLAS_AGENT_KEYS:?set OPSATLAS_AGENT_KEYS}
+      OPSATLAS_DASHBOARD_TOKEN: ${OPSATLAS_DASHBOARD_TOKEN:?set OPSATLAS_DASHBOARD_TOKEN}
+      OPSATLAS_ALLOWED_ORIGINS: ${OPSATLAS_ALLOWED_ORIGINS:-http://127.0.0.1:3000}
+    ports:
+      - "127.0.0.1:4318:4318"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    depends_on:
+      - control-plane
+    environment:
+      OPSATLAS_DEVICE_ID: ${OPSATLAS_DEVICE_ID:?set OPSATLAS_DEVICE_ID}
+      OPSATLAS_AGENT_KEY: ${OPSATLAS_AGENT_KEY:?set OPSATLAS_AGENT_KEY}
+      OPSATLAS_ENDPOINT: http://control-plane:4318/api/v1/telemetry
+      OPSATLAS_INTERVAL_MS: 30000
+      OPSATLAS_DISK_PATH: /host
+      OPSATLAS_CHECKS: "[]"
+    volumes:
+      - type: bind
+        source: .
+        target: /host
+        read_only: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

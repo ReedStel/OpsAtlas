@@ -1,0 +1,66 @@
+OpsAtlas Portfolio Source Licence 1.0
+
+Copyright © 2026 Reed Stelfox. All rights reserved.
+
+OpsAtlas is source-available portfolio software. It is not open-source software.
+
+1. Permission
+
+Subject to these terms, you may:
+
+- view the source code for personal review, education, or recruitment evaluation;
+- fork the repository using GitHub's normal public-repository functionality; and
+- download and run an unmodified copy solely for personal, non-commercial
+  evaluation.
+
+You must keep this licence and all copyright and ownership notices with every
+permitted copy or fork.
+
+2. Restrictions
+
+Except where applicable law does not allow the restriction, you may not:
+
+- modify, adapt, translate, or create derivative works from the software;
+- distribute, publish, sublicense, rent, lease, or transfer the software or its
+  source code outside the permissions above;
+- sell, resell, monetise, commercialise, or use the software to provide a paid
+  product or service;
+- deploy the software as a public or commercial hosted service;
+- rebrand the software or claim it, its design, or its source code as your own;
+- remove or obscure copyright, ownership, or licence notices; or
+- use the OpsAtlas name or branding to suggest endorsement by the copyright
+  owner.
+
+3. Ownership
+
+OpsAtlas is licensed, not sold. The copyright owner retains all title,
+copyright, and other intellectual-property rights. No trademark or patent
+licence is granted.
+
+4. GitHub forks
+
+A GitHub fork is permitted only for viewing or running the unmodified project
+for the purposes in section 1. Permission to fork does not grant permission to
+modify, redistribute, rebrand, sell, or commercialise the project.
+
+5. Termination
+
+Permission ends automatically if these terms are breached. On termination, you
+must stop using the software and delete copies under your control, except where
+GitHub retains data under its own terms or applicable law requires otherwise.
+
+6. No warranty
+
+The software is provided "as is", without warranties of any kind. To the
+maximum extent permitted by law, the copyright owner is not liable for any
+loss, damage, or claim arising from use of the software.
+
+7. Separate permission
+
+Any modification, redistribution, integration, white-labelling, or commercial
+use requires a separate written agreement signed by the copyright owner.
+
+Contact the copyright owner for written permission.
+
+This project licence is not legal advice and should be reviewed by a qualified
+lawyer before relying on it in a commercial dispute.
