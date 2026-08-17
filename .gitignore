@@ -42,3 +42,8 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+/data/
+/.opsatlas-agent-state.json
+*.db
+*.db-shm
+*.db-wal

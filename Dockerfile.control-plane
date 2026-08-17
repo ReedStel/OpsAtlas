@@ -6,8 +6,11 @@ RUN npm ci --ignore-scripts && npm run build:services
 
 FROM node:22-alpine
 ENV NODE_ENV=production
+ENV OPSATLAS_DATABASE_PATH=/data/opsatlas.db
 WORKDIR /app
 COPY --from=build /build/.opsatlas-build ./.opsatlas-build
+RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 4318
+VOLUME ["/data"]
 CMD ["node", ".opsatlas-build/services/control-plane/server.js"]

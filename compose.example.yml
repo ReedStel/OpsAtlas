@@ -6,11 +6,17 @@ services:
     environment:
       OPSATLAS_HOST: 0.0.0.0
       OPSATLAS_PORT: 4318
-      OPSATLAS_AGENT_KEYS: ${OPSATLAS_AGENT_KEYS:?set OPSATLAS_AGENT_KEYS}
+      OPSATLAS_DATABASE_PATH: /data/opsatlas.db
+      OPSATLAS_CREDENTIAL_KEY: ${OPSATLAS_CREDENTIAL_KEY:?set OPSATLAS_CREDENTIAL_KEY}
       OPSATLAS_DASHBOARD_TOKEN: ${OPSATLAS_DASHBOARD_TOKEN:?set OPSATLAS_DASHBOARD_TOKEN}
-      OPSATLAS_ALLOWED_ORIGINS: ${OPSATLAS_ALLOWED_ORIGINS:-http://127.0.0.1:3000}
+      OPSATLAS_ALLOWED_ORIGINS: ${OPSATLAS_ALLOWED_ORIGINS:-http://127.0.0.1:5173}
+      OPSATLAS_AGENT_KEYS: ${OPSATLAS_AGENT_KEYS:-}
     ports:
       - "127.0.0.1:4318:4318"
+    volumes:
+      - opsatlas-control-data:/data
+    tmpfs:
+      - /tmp
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -24,17 +30,26 @@ services:
       - control-plane
     environment:
       OPSATLAS_DEVICE_ID: ${OPSATLAS_DEVICE_ID:?set OPSATLAS_DEVICE_ID}
-      OPSATLAS_AGENT_KEY: ${OPSATLAS_AGENT_KEY:?set OPSATLAS_AGENT_KEY}
+      OPSATLAS_AGENT_KEY: ${OPSATLAS_AGENT_KEY:-}
+      OPSATLAS_ENROLLMENT_TOKEN: ${OPSATLAS_ENROLLMENT_TOKEN:-}
       OPSATLAS_ENDPOINT: http://control-plane:4318/api/v1/telemetry
       OPSATLAS_INTERVAL_MS: 30000
       OPSATLAS_DISK_PATH: /host
+      OPSATLAS_STATE_PATH: /state/agent-state.json
       OPSATLAS_CHECKS: "[]"
     volumes:
       - type: bind
         source: .
         target: /host
         read_only: true
+      - opsatlas-agent-state:/state
+    tmpfs:
+      - /tmp
     read_only: true
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+
+volumes:
+  opsatlas-control-data:
+  opsatlas-agent-state:

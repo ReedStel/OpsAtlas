@@ -6,7 +6,10 @@ RUN npm ci --ignore-scripts && npm run build:services
 
 FROM node:22-alpine
 ENV NODE_ENV=production
+ENV OPSATLAS_STATE_PATH=/state/agent-state.json
 WORKDIR /app
 COPY --from=build /build/.opsatlas-build ./.opsatlas-build
+RUN mkdir -p /state && chown node:node /state
 USER node
+VOLUME ["/state"]
 CMD ["node", ".opsatlas-build/services/agent/agent.js"]

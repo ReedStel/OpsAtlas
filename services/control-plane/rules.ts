@@ -4,6 +4,7 @@ export type IncidentSeverity = "critical" | "high" | "medium";
 
 export type IncidentCandidate = {
   rule: "disk-pressure" | "memory-saturation" | "cpu-saturation" | "service-unavailable" | "stale-heartbeat";
+  fingerprint?: string;
   severity: IncidentSeverity;
   title: string;
   detail: string;
@@ -28,8 +29,9 @@ export function evaluateTelemetry(telemetry: TelemetryEnvelope): IncidentCandida
   }
 
   for (const check of telemetry.checks) {
-    if (check.state === "down") incidents.push({ rule: "service-unavailable", severity: "high", title: `${check.name} unavailable`, detail: "The configured health check did not complete successfully." });
-    if (check.state === "degraded") incidents.push({ rule: "service-unavailable", severity: "medium", title: `${check.name} degraded`, detail: `The configured health check took ${check.latencyMs ?? "an unknown number of"} ms.` });
+    const fingerprint = `service-unavailable:${check.name.toLowerCase()}`;
+    if (check.state === "down") incidents.push({ rule: "service-unavailable", fingerprint, severity: "high", title: `${check.name} unavailable`, detail: "The configured health check did not complete successfully." });
+    if (check.state === "degraded") incidents.push({ rule: "service-unavailable", fingerprint, severity: "medium", title: `${check.name} degraded`, detail: `The configured health check took ${check.latencyMs ?? "an unknown number of"} ms.` });
   }
 
   return incidents;
