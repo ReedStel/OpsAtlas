@@ -1,16 +1,25 @@
-import { statfs } from "node:fs/promises";
+import { chmod, mkdir, readFile, rename, statfs, writeFile } from "node:fs/promises";
 import os from "node:os";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
-import { createTelemetrySignature, TELEMETRY_SCHEMA_VERSION, type CheckState, type TelemetryEnvelope } from "../shared/protocol.js";
+import { createTelemetrySignature, isValidDeviceId, TELEMETRY_SCHEMA_VERSION, type CheckState, type TelemetryEnvelope } from "../shared/protocol.js";
 
-type AgentConfig = {
+export type AgentConfig = {
   deviceId: string;
-  key: string;
+  key?: string;
+  enrollmentToken?: string;
   endpoint: string;
   intervalMs: number;
   diskPath: string;
+  statePath: string;
   checks: Array<{ name: string; url: string; timeoutMs: number }>;
+};
+
+export type AgentState = {
+  schemaVersion: 1;
+  deviceId: string;
+  nextSequence: number;
+  agentKey?: string;
 };
 
 function required(name: string): string {
@@ -29,7 +38,7 @@ function loadChecks(raw = process.env.OPSATLAS_CHECKS): AgentConfig["checks"] {
     if (typeof check.name !== "string" || !/^[a-z0-9][a-z0-9 ._-]{0,47}$/i.test(check.name)) throw new Error("Invalid check name");
     if (typeof check.url !== "string") throw new Error("Invalid check URL");
     const url = new URL(check.url);
-    if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Checks support only HTTP and HTTPS");
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error("Checks support only HTTP and HTTPS");
     const timeoutMs = check.timeoutMs === undefined ? 4000 : Number(check.timeoutMs);
     if (!Number.isInteger(timeoutMs) || timeoutMs < 250 || timeoutMs > 15_000) throw new Error("Check timeout must be 250–15000 ms");
     return { name: check.name, url: url.toString(), timeoutMs };
@@ -40,8 +49,19 @@ export function loadAgentConfig(): AgentConfig {
   const intervalMs = Number(process.env.OPSATLAS_INTERVAL_MS ?? "30000");
   if (!Number.isInteger(intervalMs) || intervalMs < 10_000 || intervalMs > 3_600_000) throw new Error("OPSATLAS_INTERVAL_MS must be 10000–3600000");
   const endpoint = new URL(process.env.OPSATLAS_ENDPOINT ?? "http://127.0.0.1:4318/api/v1/telemetry");
-  if (!['http:', 'https:'].includes(endpoint.protocol)) throw new Error("OPSATLAS_ENDPOINT must use HTTP or HTTPS");
-  return { deviceId: required("OPSATLAS_DEVICE_ID"), key: required("OPSATLAS_AGENT_KEY"), endpoint: endpoint.toString(), intervalMs, diskPath: process.env.OPSATLAS_DISK_PATH ?? process.cwd(), checks: loadChecks() };
+  if (!["http:", "https:"].includes(endpoint.protocol)) throw new Error("OPSATLAS_ENDPOINT must use HTTP or HTTPS");
+  const deviceId = required("OPSATLAS_DEVICE_ID");
+  if (!isValidDeviceId(deviceId)) throw new Error("OPSATLAS_DEVICE_ID must be 3–64 letters, numbers, dots, underscores, or hyphens");
+  return {
+    deviceId,
+    key: process.env.OPSATLAS_AGENT_KEY?.trim() || undefined,
+    enrollmentToken: process.env.OPSATLAS_ENROLLMENT_TOKEN?.trim() || undefined,
+    endpoint: endpoint.toString(),
+    intervalMs,
+    diskPath: process.env.OPSATLAS_DISK_PATH ?? process.cwd(),
+    statePath: resolve(process.env.OPSATLAS_STATE_PATH ?? ".opsatlas-agent-state.json"),
+    checks: loadChecks(),
+  };
 }
 
 type CpuSample = { idle: number; total: number };
@@ -102,23 +122,88 @@ export async function collectTelemetry(config: AgentConfig, sequence: number): P
   };
 }
 
-export async function sendTelemetry(config: AgentConfig, telemetry: TelemetryEnvelope): Promise<void> {
+export async function sendTelemetry(config: AgentConfig, key: string, telemetry: TelemetryEnvelope): Promise<void> {
   const body = JSON.stringify(telemetry);
   const timestamp = Date.now().toString();
   const response = await fetch(config.endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-OpsAtlas-Device": config.deviceId, "X-OpsAtlas-Timestamp": timestamp, "X-OpsAtlas-Signature": createTelemetrySignature(body, timestamp, config.key) },
+    headers: { "Content-Type": "application/json", "X-OpsAtlas-Device": config.deviceId, "X-OpsAtlas-Timestamp": timestamp, "X-OpsAtlas-Signature": createTelemetrySignature(body, timestamp, key) },
     body,
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new Error(`Control plane rejected telemetry with status ${response.status}`);
 }
 
+export async function loadAgentState(config: AgentConfig): Promise<AgentState> {
+  try {
+    const decoded: unknown = JSON.parse(await readFile(config.statePath, "utf8"));
+    if (typeof decoded !== "object" || decoded === null) throw new Error("state is not an object");
+    const state = decoded as Partial<AgentState>;
+    if (state.schemaVersion !== 1 || state.deviceId !== config.deviceId || !Number.isSafeInteger(state.nextSequence) || Number(state.nextSequence) < 0) throw new Error("state does not match this agent");
+    if (state.agentKey !== undefined && (typeof state.agentKey !== "string" || state.agentKey.length < 24)) throw new Error("stored agent key is invalid");
+    return state as AgentState;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") throw new Error(`Unable to read agent state: ${error instanceof Error ? error.message : "unknown error"}`);
+    return { schemaVersion: 1, deviceId: config.deviceId, nextSequence: 0 };
+  }
+}
+
+export async function saveAgentState(config: AgentConfig, state: AgentState): Promise<void> {
+  await mkdir(dirname(config.statePath), { recursive: true, mode: 0o700 });
+  const temporary = `${config.statePath}.${process.pid}.tmp`;
+  await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  await rename(temporary, config.statePath);
+  await chmod(config.statePath, 0o600);
+}
+
+function enrollmentEndpoint(telemetryEndpoint: string): string {
+  const url = new URL(telemetryEndpoint);
+  url.pathname = "/api/v1/enroll";
+  url.search = "";
+  return url.toString();
+}
+
+export async function enrollAgent(config: AgentConfig, token: string): Promise<string> {
+  const response = await fetch(enrollmentEndpoint(config.endpoint), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId: config.deviceId, token }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`Agent enrollment failed with status ${response.status}`);
+  const decoded = await response.json() as { agentKey?: unknown };
+  if (typeof decoded.agentKey !== "string" || decoded.agentKey.length < 24) throw new Error("Enrollment response did not contain a valid agent key");
+  return decoded.agentKey;
+}
+
+async function resolveAgentKey(config: AgentConfig, state: AgentState): Promise<{ key: string; state: AgentState }> {
+  if (config.key) return { key: config.key, state: { ...state, agentKey: undefined } };
+  if (state.agentKey) return { key: state.agentKey, state };
+  if (!config.enrollmentToken) throw new Error("Set OPSATLAS_AGENT_KEY, provide OPSATLAS_ENROLLMENT_TOKEN, or retain an enrolled state file");
+  const agentKey = await enrollAgent(config, config.enrollmentToken);
+  const enrolledState = { ...state, agentKey };
+  await saveAgentState(config, enrolledState);
+  return { key: agentKey, state: enrolledState };
+}
+
 export async function runAgent(config = loadAgentConfig()): Promise<never> {
-  let sequence = 0;
+  let state = await loadAgentState(config);
+  const resolved = await resolveAgentKey(config, state);
+  const key = resolved.key;
+  state = resolved.state;
+
   for (;;) {
-    try { await sendTelemetry(config, await collectTelemetry(config, sequence++)); process.stdout.write(`${new Date().toISOString()} telemetry accepted\n`); }
-    catch (error) { process.stderr.write(`${new Date().toISOString()} telemetry delivery failed: ${error instanceof Error ? error.message : "unknown error"}\n`); }
+    const sequence = state.nextSequence;
+    try {
+      const telemetry = await collectTelemetry(config, sequence);
+      state = { ...state, nextSequence: sequence + 1 };
+      await saveAgentState(config, state);
+      await sendTelemetry(config, key, telemetry);
+      process.stdout.write(`${new Date().toISOString()} telemetry accepted\n`);
+    } catch (error) {
+      process.stderr.write(`${new Date().toISOString()} telemetry delivery failed: ${error instanceof Error ? error.message : "unknown error"}\n`);
+    }
     await delay(config.intervalMs);
   }
 }

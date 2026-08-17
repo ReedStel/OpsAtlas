@@ -40,6 +40,10 @@ function isShortString(value: unknown, maxLength: number): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= maxLength;
 }
 
+export function isValidDeviceId(value: unknown): value is string {
+  return isShortString(value, 64) && /^[a-z0-9][a-z0-9._-]{2,63}$/i.test(value);
+}
+
 export function createTelemetrySignature(body: string | Buffer, timestamp: string, key: string): string {
   if (!timestamp || !key) throw new Error("A timestamp and signing key are required");
   return createHmac("sha256", key).update(timestamp).update(".").update(body).digest("hex");
@@ -65,7 +69,7 @@ export function verifyTelemetrySignature(
 export function parseTelemetryEnvelope(value: unknown): TelemetryEnvelope {
   if (!isRecord(value)) throw new Error("Telemetry must be a JSON object");
   if (value.schemaVersion !== TELEMETRY_SCHEMA_VERSION) throw new Error("Unsupported telemetry schema");
-  if (!isShortString(value.deviceId, 64) || !/^[a-z0-9][a-z0-9._-]{2,63}$/i.test(value.deviceId)) throw new Error("Invalid deviceId");
+  if (!isValidDeviceId(value.deviceId)) throw new Error("Invalid deviceId");
   if (!isShortString(value.sentAt, 40) || !Number.isFinite(Date.parse(value.sentAt))) throw new Error("Invalid sentAt timestamp");
   if (!Number.isSafeInteger(value.sequence) || (value.sequence as number) < 0) throw new Error("Invalid sequence");
   if (!["linux", "win32", "darwin", "other"].includes(String(value.platform))) throw new Error("Invalid platform");
