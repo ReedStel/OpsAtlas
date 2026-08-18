@@ -1,4 +1,13 @@
-# OpsAtlas
+<p align="center">
+  <img src="public/opsatlas-banner.svg" alt="OpsAtlas — privacy-first fleet health and incident command" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/ReedStel/OpsAtlas/actions/workflows/ci.yml"><img src="https://github.com/ReedStel/OpsAtlas/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5.9">
+  <img src="https://img.shields.io/badge/Node.js-22%2B-5FA04E?logo=nodedotjs&logoColor=white" alt="Node.js 22 or newer">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available-f0a94a" alt="Source-available licence"></a>
+</p>
 
 OpsAtlas is a privacy-first fleet health and incident command console. It turns
 small, signed health reports from Windows, Linux, and macOS nodes into one live
@@ -85,6 +94,13 @@ npm run test:services
 npm test
 npm run validate:artifact
 ```
+
+### Sixty-second review
+
+For a quick technical review, open the dashboard, switch between fleet and incident views, then
+inspect the HMAC/replay tests in `services/tests/protocol.test.mjs` and the authenticated ingestion
+flow in `services/tests/server.test.mjs`. The threat model in `docs/threat-model.md` records what the
+current controls cover and what still belongs at a real deployment boundary.
 
 ## Status
 
