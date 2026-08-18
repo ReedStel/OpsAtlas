@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">OpsAtlas</title>
+  <desc id="desc">A dark operations dashboard banner with a fictional fleet map and incident status cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#061019"/>
+      <stop offset=".55" stop-color="#0a1b29"/>
+      <stop offset="1" stop-color="#102b38"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#61dafb"/>
+      <stop offset="1" stop-color="#4f8cff"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#91b5c9" stroke-opacity=".07"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="320" rx="22" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="22" fill="url(#grid)"/>
+
+  <g transform="translate(64 62)" font-family="Inter,Segoe UI,Arial,sans-serif">
+    <g transform="translate(0 2)">
+      <path d="M52 0 69 35l35 17-35 17-17 35-17-35L0 52l35-17Z" fill="none" stroke="url(#blue)" stroke-width="4"/>
+      <circle cx="52" cy="52" r="13" fill="#061019" stroke="#69e4c0" stroke-width="4"/>
+      <circle cx="52" cy="52" r="4" fill="#69e4c0"/>
+    </g>
+    <text x="132" y="65" fill="#f2f7fa" font-size="60" font-weight="750" letter-spacing="-2">OpsAtlas</text>
+    <text x="134" y="104" fill="#9ab5c7" font-size="21">Privacy-first fleet health and incident command</text>
+    <g transform="translate(134 137)" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="14">
+      <rect width="430" height="40" rx="10" fill="#071521" stroke="#294456"/>
+      <circle cx="22" cy="20" r="5" fill="#69e4c0"/>
+      <text x="39" y="25" fill="#d8e8f2">signed telemetry  ·  bounded ingest  ·  live state</text>
+    </g>
+  </g>
+
+  <g transform="translate(700 44)" font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+    <rect width="432" height="232" rx="16" fill="#07141f" stroke="#284253"/>
+    <path d="M32 155 114 88l92 34 83-72 109 66" fill="none" stroke="#3f6f89" stroke-width="2"/>
+    <path d="M32 155 114 88l92 34" fill="none" stroke="#61dafb" stroke-width="2"/>
+    <g fill="#07141f" stroke-width="4">
+      <circle cx="32" cy="155" r="9" stroke="#69e4c0"/>
+      <circle cx="114" cy="88" r="9" stroke="#69e4c0"/>
+      <circle cx="206" cy="122" r="9" stroke="#ffca73"/>
+      <circle cx="289" cy="50" r="9" stroke="#69e4c0"/>
+      <circle cx="398" cy="116" r="9" stroke="#ff6b72"/>
+    </g>
+    <g font-size="12">
+      <text x="24" y="180" fill="#89a6b8">edge-01</text>
+      <text x="92" y="70" fill="#89a6b8">api-01</text>
+      <text x="179" y="150" fill="#89a6b8">store-01</text>
+      <text x="257" y="31" fill="#89a6b8">worker-03</text>
+      <text x="357" y="143" fill="#89a6b8">field-07</text>
+    </g>
+    <g transform="translate(28 190)" font-size="12">
+      <rect width="116" height="24" rx="7" fill="#102b2d"/>
+      <circle cx="13" cy="12" r="4" fill="#69e4c0"/>
+      <text x="24" y="16" fill="#bfeadf">3 healthy</text>
+      <rect x="126" width="112" height="24" rx="7" fill="#312717"/>
+      <circle cx="139" cy="12" r="4" fill="#ffca73"/>
+      <text x="150" y="16" fill="#f5d79c">1 watch</text>
+      <rect x="248" width="128" height="24" rx="7" fill="#351b21"/>
+      <circle cx="261" cy="12" r="4" fill="#ff6b72"/>
+      <text x="272" y="16" fill="#ffc0c3">1 critical</text>
+    </g>
+  </g>
+</svg>
